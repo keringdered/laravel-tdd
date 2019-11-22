@@ -23,12 +23,20 @@ class ParticipateInForumTest extends TestCase
         $this->withExceptionHandling()->post($thread->path().'/replies',[])->assertRedirect('login');
     }
    public function test_an_authenticated_user_can_participate_in_threads(){
-        $this->signIn();
+        $this->withExceptionHandling()->signIn();
         $thread = create(Thread::class);
         $reply = make(Reply::class,['thread_id'=>$thread->id]);
        $this->post($thread->path().'/replies',$reply->toArray());
         $this->get($thread->path())
             ->assertSee($reply->body);
 
+   }
+   public function test_a_reply_requires_body(){
+    $this->withExceptionHandling()->signIn();
+
+       $thread = create(Thread::class);
+
+       $this->validate_required(Reply::class,$thread->path().'/replies',['thread_id'=>$thread->id,'body'=>null])
+           ->assertSessionHasErrors('body');
    }
 }

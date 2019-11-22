@@ -37,4 +37,9 @@ abstract class TestCase extends BaseTestCase
         $this->actingAs($user);
         return $this;
     }
+    protected function validate_required($class,$url,$overrides =[]){
+        $this->withExceptionHandling()->signIn();
+        $record = make($class,$overrides);
+       return  $this->post($url,$record->toArray());
+    }
 }

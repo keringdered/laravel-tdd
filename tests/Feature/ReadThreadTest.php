@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Channel;
 use App\Reply;
 use App\Thread;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
@@ -39,7 +40,7 @@ class ReadThreadTest extends TestCase
         $response->assertSee($reply->body);
     }
     public function test_an_authenticated_user_can_create_thread(){
-        $this->actingAs(create('App\User'));
+        $this->signIn();
         $thread = make(Thread::class);
         $response = $this->post("/threads",$thread->toArray());
         $this->get($response->headers->get('Location'))
@@ -47,12 +48,12 @@ class ReadThreadTest extends TestCase
             ->assertSee($thread->body);
     }
     public function test_unauthenticated_user_may_not_create_thread(){
-        $thread = make(Thread::class);
+        /*$thread = make(Thread::class);*/
         $this->withExceptionHandling();
             $this->get('/threads/create')
                 ->assertRedirect('login');
 
-            $this->post("/threads",$thread->toArray())
+            $this->post("/threads")
             ->assertRedirect('login');
     }
     public function test_user_can_see_create_thread_form(){
@@ -62,4 +63,32 @@ class ReadThreadTest extends TestCase
     public  function test_a_thread_can_make_a_string_path(){
         $this->assertEquals('/threads/'.$this->thread->channel->slug.'/'.$this->thread->id,$this->thread->path());
     }
+    public function test_a_thread_requires_title(){
+        $this->validate_required(Thread::class,"/threads",['title'=>null])
+            ->assertSessionHasErrors('title');
+    }
+    public function test_a_thread_requires_a_body(){
+        $this->validate_required(Thread::class,'/threads',['body'=>null])
+            ->assertSessionHasErrors('body');
+    }
+    public function test_a_thread_requires_valid_channel(){
+        factory(Channel::class,2)->create();
+
+        $this->validate_required(Thread::class,'/threads',['channel_id'=>null])
+            ->assertSessionHasErrors('channel_id');
+
+        $this->validate_required(Thread::class,'/threads',['channel_id'=>99])
+            ->assertSessionHasErrors('channel_id');
+    }
+    public function test_user_can_filter_threads_per_channel(){
+        $channel = create(Channel::class); //create a channel
+
+        $thread_channel =create(Thread::class,['channel_id'=>$channel->id]);/*create a thread and associate*/
+        $thread_not_channel =create(Thread::class);/*create a thread which is not associated*/
+        $this->get('/threads/'.$channel->slug)/*visit threads/channel-slug and make test */
+            ->assertSee($thread_channel->title)
+            ->assertDontSee($thread_not_channel->title);
+
+    }
+
 }
