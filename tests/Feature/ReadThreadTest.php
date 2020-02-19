@@ -7,7 +7,6 @@ use App\Reply;
 use App\Thread;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class ReadThreadTest extends TestCase
 {
@@ -26,9 +25,15 @@ class ReadThreadTest extends TestCase
     public function test_a_user_can_browse_all_threads()
     {
         $response = $this ->get('/threads');
+        $response->assertStatus(200);
         $response->assertSee($this->thread->title);
 
 
+    }
+    public function test_a_user_can_see_thread_owner(){
+        $response = $this->get('/threads');
+        $response->assertStatus(200)
+            ->assertSee($this->thread->creator->name);
     }
     public function test_a_user_can_view_a_thread(){
         $response = $this ->get($this->thread->path());
@@ -38,6 +43,7 @@ class ReadThreadTest extends TestCase
         $reply = create(Reply::class,['thread_id'=>$this->thread->id]);
         $response = $this->get($this->thread->path());
         $response->assertSee($reply->body);
+        $response->assertSee($reply->owner->name);
     }
     public function test_an_authenticated_user_can_create_thread(){
         $this->signIn();
@@ -72,7 +78,7 @@ class ReadThreadTest extends TestCase
             ->assertSessionHasErrors('body');
     }
     public function test_a_thread_requires_valid_channel(){
-        factory(Channel::class,2)->create();
+        //factory(Channel::class,2)->create();
 
         $this->validate_required(Thread::class,'/threads',['channel_id'=>null])
             ->assertSessionHasErrors('channel_id');

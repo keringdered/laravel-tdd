@@ -16,6 +16,9 @@
 
                        @foreach($threads as $thread)
                            <article>
+                               <aside>
+                                   <strong>{{$thread->creator->name}} </strong>
+                               </aside>
                                <a href="{{$thread->path()}}">{{ $thread->title }}</a>
                                <div class="body">
                                    {{$thread->body}}
